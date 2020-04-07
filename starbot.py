@@ -1,7 +1,7 @@
 import sc2
 from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
-from sc2.constants import COMMANDCENTER, SCV, SUPPLYDEPOT, REFINERY, BARRACKS
+from sc2.constants import COMMANDCENTER, SCV, SUPPLYDEPOT, REFINERY, BARRACKS, MARINE, REACTOR
 
 
 class TayBot(sc2.BotAI):
@@ -12,6 +12,10 @@ class TayBot(sc2.BotAI):
         await self.build_supplydepot()
         await self.build_refinery()
         await self.build_barracks()
+        await self.build_reactor()
+        await self.build_marine()
+       
+        
 
     async def build_workers(self):
     	for cc in self.units(COMMANDCENTER).ready.noqueue:
@@ -43,7 +47,21 @@ class TayBot(sc2.BotAI):
     			worker = self.select_build_worker(cc.position)
     			if worker is not None:
     				build_location = await self.find_placement(BARRACKS, cc.position, placement_step=4)
-    				await self.do(worker.build(BARRACKS, build_location))
+    				await self.do(worker.build(BARRACKS, closer_than(15.0, cc)))
+
+    async def build_marine(self):
+        for cc in self.units(BARRACKS).ready.noqueue:
+             if self.can_afford(MARINE): 
+                await self.do(cc.train(MARINE))
+
+    async def build_reactor(self):
+        for cc in self.units(BARRACKS).ready.noqueue:
+            if not self.already_pending(REACTOR): 
+                if has_add_on(self.units(REACTOR)):
+                    break
+                if self.units(BARRACKS).amount > 1 and self.units(BARRACKS).amount < 2 :
+                    if self.can_afford(REACTOR):
+                        await self.build(REACTOR, closer_than(15.0, cc))
 
     				
 
@@ -56,4 +74,4 @@ class TayBot(sc2.BotAI):
 run_game(maps.get("AbyssalReefLE"), [
     Bot(Race.Terran, TayBot()),
     Computer(Race.Terran, Difficulty.Easy)
-], realtime=False) 
+], realtime=True) 
